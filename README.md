@@ -29,7 +29,7 @@ This reposity holds instructions for configuring GPU acclerated Windows nodes in
 1. Deploy `k8s-directx-device-plugin.yaml to your cluster
 
     ```bash
-    kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acceleration/master/k8s-directx-device-plugin/k8s-directx-device-plugin.yaml
+    kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acceleration/main/k8s-directx-device-plugin/k8s-directx-device-plugin.yaml
     ```
 
 ### Node Setup Verification

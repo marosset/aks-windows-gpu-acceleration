@@ -6,7 +6,7 @@ This reposity holds instructions for configuring GPU acclerated Windows nodes in
 
 1. Create an AKS cluster following https://docs.microsoft.com/en-us/azure/aks/learn/quick-windows-container-deploy-cli#create-an-aks-cluster
 
-1. Add a Windows Server node pool following https://docs.microsoft.com/en-us/azure/aks/learn/quick-windows-container-deploy-cli#create-an-aks-cluster
+1. Add a Windows Server node pool following https://learn.microsoft.com/en-us/azure/aks/learn/quick-windows-container-deploy-cli#add-a-windows-node-pool
 
     Notes:
 

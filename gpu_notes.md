@@ -1,10 +1,14 @@
+# NOTES
+
+Notes based on trying to run the guide on running Windows GPUS in AKS: <https://github.com/marosset/aks-windows-gpu-acceleration>
+
 Create a .env
 
 ```sh
 RES_GROUP=
 REGION="westeurope"
 ACR_NAME=
-WINDOWS_AKS_NAME=
+AKS_NAME=
 NODE_POOL_NAME=
 
 WINDOWS_ADMIN_PASSWORD=
@@ -19,45 +23,66 @@ source .env
 ```
 
 
+Login and set your account
 
-# az account set --subscription $SUBSCRIPTION
+```sh
+az login
+az account set --subscription $SUBSCRIPTION
+```
 
-https://github.com/marosset/aks-windows-gpu-acceleration
+View available VMs
 
+
+```sh
 az vm list-usage --location "West Europe" -o table
 az vm list-sizes --location "West Europe" -o table
+```
 
-# GPU work
+Create resource group and AKS
 
+```sh
 az group create --name $RES_GROUP --location $REGION
-
 
 az aks create \
     --resource-group $RES_GROUP \
-    --name $WINDOWS_AKS_NAME \
+    --name $AKS_NAME \
     --location $REGION \
     --node-count 2 \
     --enable-addons monitoring \
     --generate-ssh-keys \
     --vm-set-type VirtualMachineScaleSets \
     --network-plugin azure
+```
 
-# ONLY WORKS ON NV MACHINES, NOT NC
+Connect to AKS
 
+```sh
+az aks get-credentials --name $AKS_NAME --resource-group $RES_GROUP
+
+```
+
+> WARNING: ONLY WORKS ON NV MACHINES, NOT NC
+
+```sh
 az aks nodepool add \
     --resource-group $RES_GROUP \
     --name $NODE_POOL_NAME \
-    --cluster-name $WINDOWS_AKS_NAME \
+    --cluster-name $AKS_NAME \
     # --node-vm-size Standard_NV6ads_A10_v5 \ 
     --node-vm-size Standard_NC4as_T4_v3  \    
     --os-type Windows \
     --os-sku Windows2019 \
     --node-count 1
+```
 
-CLUSTER_RESOURCE_GROUP=$(az aks show --resource-group $RES_GROUP --name $WINDOWS_AKS_NAME --query nodeResourceGroup -o tsv)
+Get AKS's resource group and VMSS name
+
+```sh
+CLUSTER_RESOURCE_GROUP=$(az aks show --resource-group $RES_GROUP --name $AKS_NAME --query nodeResourceGroup -o tsv)
 VMSS_NAME=$(az vmss list -g $CLUSTER_RESOURCE_GROUP --query "[1].name"  | tr -d '"' )
+```
 
-list all extensions avaliable
+list all extensions available
 
 ```sh
 az vmss extension image list -o table
@@ -74,14 +99,17 @@ az vmss extension set \
 ```
 
 
+
 ```sh
 az vmss update-instances --resource-group $CLUSTER_RESOURCE_GROUP --name $VMSS_NAME  --instance-ids "*"
 
-az aks get-credentials --name $WINDOWS_AKS_NAME --resource-group $RES_GROUP
+az aks get-credentials --name $AKS_NAME --resource-group $RES_GROUP
 
 kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acceleration/main/k8s-directx-device-plugin/k8s-directx-device-plugin.yaml
 
 ```
+
+
 
 
 > NOTE: directX pod needs to be restarted if this applied before the VM is created or extension is isntalled
@@ -136,10 +164,10 @@ https://github.com/onnx/models.git/info/lfs/objects/batch
 # start stop
 
 # Stop the cluster
-az aks stop --resource-group $RES_GROUP --name $WINDOWS_AKS_NAME
+az aks stop --resource-group $RES_GROUP --name $AKS_NAME
 
 # Start the cluster
-az aks start --resource-group $RES_GROUP --name $WINDOWS_AKS_NAME
+az aks start --resource-group $RES_GROUP --name $AKS_NAME
 
 # exec into pod
 
@@ -162,9 +190,9 @@ https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli
 
 
 
-az aks update -g $RES_GROUP -n $WINDOWS_AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
+az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
 
-CLUSTER_RG=$(az aks show -g $RES_GROUP -n $WINDOWS_AKS_NAME --query nodeResourceGroup -o tsv)
+CLUSTER_RG=$(az aks show -g $RES_GROUP -n $AKS_NAME --query nodeResourceGroup -o tsv)
 VNET_NAME=$(az network vnet list -g $CLUSTER_RG --query [0].name -o tsv)
 SUBNET_NAME=$(az network vnet subnet list -g $CLUSTER_RG --vnet-name $VNET_NAME --query [0].name -o tsv)
 SUBNET_ID=$(az network vnet subnet show -g $CLUSTER_RG --vnet-name $VNET_NAME --name $SUBNET_NAME --query id -o tsv)

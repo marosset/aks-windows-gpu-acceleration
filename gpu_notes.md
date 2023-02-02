@@ -19,6 +19,7 @@ Load .env to terminal
 
 ```sh
 export $(grep -v '^#' .env | xargs)
+# OR
 source .env
 ```
 
@@ -61,6 +62,7 @@ az aks get-credentials --name $AKS_NAME --resource-group $RES_GROUP
 
 ```
 
+
 > WARNING: ONLY WORKS ON NV MACHINES, NOT NC
 
 ```sh
@@ -75,6 +77,13 @@ az aks nodepool add \
     --node-count 1
 ```
 
+Scale nodes up or down:
+
+```sh
+SCALE=2
+az aks scale --resource-group $RES_GROUP --name $AKS_NAME --node-count $SCALE --nodepool-name $NODE_POOL_NAME
+```
+
 Get AKS's resource group and VMSS name
 
 ```sh
@@ -82,7 +91,7 @@ CLUSTER_RESOURCE_GROUP=$(az aks show --resource-group $RES_GROUP --name $AKS_NAM
 VMSS_NAME=$(az vmss list -g $CLUSTER_RESOURCE_GROUP --query "[1].name"  | tr -d '"' )
 ```
 
-list all extensions available
+list all extensions available in azure
 
 ```sh
 az vmss extension image list -o table
@@ -99,20 +108,23 @@ az vmss extension set \
 ```
 
 
+```sh
+az vmss extension delete \
+  --resource-group $CLUSTER_RESOURCE_GROUP \
+  --vmss-name $VMSS_NAME \
+  --name NvidiaGpuDriverWindows 
+```
+
 
 ```sh
 az vmss update-instances --resource-group $CLUSTER_RESOURCE_GROUP --name $VMSS_NAME  --instance-ids "*"
 
-az aks get-credentials --name $AKS_NAME --resource-group $RES_GROUP
 
 kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acceleration/main/k8s-directx-device-plugin/k8s-directx-device-plugin.yaml
 
 ```
 
-
-
-
-> NOTE: directX pod needs to be restarted if this applied before the VM is created or extension is isntalled
+> NOTE: directX pod needs to be restarted if this applied before the VM is created or extension is installed
 
 
 k describe node <node_name>
@@ -175,15 +187,15 @@ kubectl exec --stdin --tty pods/sample-ml-workload-6896d6fb6b-c94sb -- PowerShel
 dxdiag /t dxdiag.txt
 cat dxdiag.txt
 
-# Look for DXVA2 Modes:
-# May be possible to change mode?
+> Look for DXVA2 Modes:
+> May be possible to change mode?
 Tesla Compute Cluster (TCC)
 https://docs.nvidia.com/gameworks/content/developertools/desktop/tesla_compute_cluster.htm
 
 Azure N-series NVIDIA GPU driver setup for Windows - Azure Virtual Machines | Microsoft Learn
 https://learn.microsoft.com/en-us/azure/virtual-machines/windows/n-series-driver-setup
 
-### RDP into VM
+### RDP into cluster NODE
 
 RDP to AKS Windows Server nodes - Azure Kubernetes Service | Microsoft Learn
 https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli
@@ -192,11 +204,17 @@ https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli
 
 az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
 
+```sh
+
 CLUSTER_RG=$(az aks show -g $RES_GROUP -n $AKS_NAME --query nodeResourceGroup -o tsv)
 VNET_NAME=$(az network vnet list -g $CLUSTER_RG --query [0].name -o tsv)
 SUBNET_NAME=$(az network vnet subnet list -g $CLUSTER_RG --vnet-name $VNET_NAME --query [0].name -o tsv)
 SUBNET_ID=$(az network vnet subnet show -g $CLUSTER_RG --vnet-name $VNET_NAME --name $SUBNET_NAME --query id -o tsv)
 NSG_NAME=$(az network nsg list -g $CLUSTER_RG --query [].name -o tsv)
+
+```
+
+```sh
 
 PUBLIC_IP_ADDRESS_NAME="winVMPublicIP"
 
@@ -216,8 +234,13 @@ az vm create \
     --query publicIpAddress -o tsv
 
   # --public-ip-sku Standard \
-
 VM_IP=20.73.78.71
+
+```
+
+Create network rule to allow rdp
+
+```sh
 
 NSG_NAME=$(az network nsg list -g $CLUSTER_RG --query [].name -o tsv)
 
@@ -229,6 +252,8 @@ az network nsg rule create \
  --destination-port-range 3389 \
  --protocol Tcp \
  --description "Temporary RDP access to Windows nodes"
+
+ ```
 
  # Go to the vm in portal -> Connect -> connect with RDP
 
@@ -256,7 +281,7 @@ d-----        1/31/2023  11:46 AM                Microsoft.Compute.CustomScriptE
 ```
 
 ```sh
-PS C:\Users\azureuser> & '..\..\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
+ & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
 Tue Jan 31 13:27:15 2023
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 473.47       Driver Version: 473.47       CUDA Version: 11.4     |
@@ -287,7 +312,7 @@ Creating LearningModelDevice failed!Class not registered
 install deps
 ```sh
 
-# Try 7zip to unarchive headless
+# TODO: Try 7zip to unarchive headless
 curl.exe -L -o nvidia_grid.exe https://download.microsoft.com/download/7/3/6/7361d1b9-08c8-4571-87aa-18cf671e71a0/512.78_grid_win10_win11_server2016_server2019_server2022_64bit_azure_swl.exe
 .\nvidia_grid.exe
 
@@ -341,6 +366,8 @@ Copy-Item  Microsoft.PowerShell.Core\FileSystem::\\tsclient\C\Users\azureuser\Do
 
 
 Expand-Archive -Path C:\Users\azureuser\Downloads\XRSession.zip -DestinationPath C:\
+
+ Rename-Item C:\XRSession-adapterIndex0\ XRSession
 
 . C:\XRSession\Aveva.Cvp.Cloud.Poc.VideoService.XrSession.Executable.exe 027efe6f-aca8-4c3d-8e53-71535114e625 043efe6f-aca8-4c3d-8e53-71535114e625 sessionId vm1 contractEndpointUri 027efe6f-aca8-4c3d-aaaa-71535114e625
 

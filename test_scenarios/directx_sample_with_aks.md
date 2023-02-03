@@ -1,6 +1,7 @@
-# Run containerized DirectX sample on Windows Server Core 2019
+# Run DirectX sample on AKS
 
-This is documents the results of running the [Windows GPU DirectX Sample](https://github.com/MicrosoftDocs/Virtualization-Documentation/tree/main/windows-container-samples/directx) within AKS with `Standard_NC4as_T4_v3` SKU Windows Server Core 2019 nodepool.
+This is documents the results of running the [Windows GPU DirectX Sample](https://github.com/MicrosoftDocs/Virtualization-Documentation/tree/main/windows-container-samples/directx) within AKS following the steps in [this document](../README.md).
+The AKS windows nodepool is `Standard_NC4as_T4_v3` SKU Windows Server Core 2019.
 
 K8s manifests deployed in the cluster:
 

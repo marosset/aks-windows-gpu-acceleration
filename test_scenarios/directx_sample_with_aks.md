@@ -16,6 +16,8 @@ Tested driver installation methods:
   ```powershell
   curl.exe -L -o nvidia_grid.exe https://download.microsoft.com/download/7/3/6/7361d1b9-08c8-4571-87aa-18cf671e71a0/512.78_grid_win10_win11_server2016_server2019_server2022_64bit_azure_swl.exe
   .\nvidia_grid.exe
+
+  Restart-Computer # Computer will restart!
   ```
 
 - NVIDIA CUDA drivers:
@@ -476,4 +478,62 @@ cat dxdiag.txt
         D3D9 Overlay: Unknown
              DXVA-HD: Unknown
 ...
+```
+
+## Update containerd
+
+In order to make use of `--device` flag which is set in the `k8s-directx-device-plugin`, we need this [PR #6618](https://github.com/containerd/containerd/pull/6618) which is only available in 1.7.0-beta* versions at the time of writing this.
+
+```powershell
+$Version="1.7.0-beta.3"
+curl.exe -L https://github.com/containerd/containerd/releases/download/v$Version/containerd-$Version-windows-amd64.tar.gz -o containerd-windows-amd64.tar.gz
+
+Stop-Service kubeproxy
+Stop-Service kubelet
+Stop-Service containerd
+
+Copy-Item -Path ".\bin\ctr.exe" -Destination "$Env:ProgramFiles\containerd" -Force
+Copy-Item -Path ".\bin\containerd-shim-runhcs-v1.exe" -Destination "$Env:ProgramFiles\containerd" -Force
+Copy-Item -Path ".\bin\containerd.exe" -Destination "$Env:ProgramFiles\containerd" -Force
+
+Start-Service kubeproxy
+Start-Service kubelet
+Start-Service containerd
+```
+
+Pod logs snippet. [Full log](aks_containerd_beta_pod_logs.txt):
+```
+...
+
+Created LearningModelDevice with CPU device
+
+Created LearningModelDevice with GPU: NVIDIA Tesla T4
+Loading model (path = C:\App\model\model.onnx)...
+=================================================================
+...
+```
+
+GRID Driver:
+```
+PS C:\Users\azureuser> & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
+Fri Feb  3 19:33:53 2023
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 512.78       Driver Version: 512.78       CUDA Version: 11.6     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name            TCC/WDDM | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla T4           WDDM  | 00000001:00:00.0 Off |                  Off |
+| N/A   31C    P8    15W /  70W |     30MiB / 16384MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A      6220    C+G   ...2.1.1\x64\WinMLRunner.exe    N/A      |
++-----------------------------------------------------------------------------+
 ```

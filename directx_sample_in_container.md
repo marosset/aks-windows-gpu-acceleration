@@ -1,4 +1,4 @@
-# Run containerized DirectX sample on Windows Server Core
+# Run containerized DirectX sample on Windows Server Core 2019
 
 This is documents on how to run the [Windows GPU DirectX Sample](https://github.com/MicrosoftDocs/Virtualization-Documentation/tree/main/windows-container-samples/directx) within a container on Windows Server Core VM. The following command have been tested on the VM SKU `Standard_NC4as_T4_v3`.
 
@@ -22,25 +22,25 @@ $ACR_PASSWORD=""
 Configure your environment to enable container-related OS features and install the Docker runtime.
 Reference docs [here](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-1).
 
-```sh
+```powershell
 Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/microsoft/Windows-Containers/Main/helpful_tools/Install-DockerCE/install-docker-ce.ps1" -o install-docker-ce.ps1
 .\install-docker-ce.ps1
 ```
 
 Login to docker
 
-```sh
+```powershell
 docker login "${ACR_NAME}.azurecr.io" -u $ACR_USERNAME -p $ACR_PASSWORD
 ```
 
-Run DirectX sample. 
+Run DirectX sample.
 
-```sh
+```powershell
 # Run with device not bound
 docker run "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
 
 # Run with device bound
-docker run --isolation process --device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599 "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
+docker run --isolation process --device "class/5B45201D-F2F2-4F3B-85BB-30FF1F953599" "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
 ```
 
 > TIP: To open a new Command Prompt window in Windows Server Core, press `CTRL+ALT+DELETE`. If you are using RDP to connect remotely, use `CTRL+ALT+END`.
@@ -53,9 +53,8 @@ docker run --isolation process --device class/5B45201D-F2F2-4F3B-85BB-30FF1F9535
 These are the results for running the DirectX sample with the device unbound. Interesting thing to note is that the model still detects the GPU, but errors out on when trying to use it.
 Unlike when running the container within AKS, where GPU device is not detected by the sample at all.
 
-```sh
+```powershell
 PS C:\Users\azureuser> docker run -it "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
->>
 
 Created LearningModelDevice with CPU device
 
@@ -124,6 +123,8 @@ CESS]
 Evaluating (device = GPU, iteration = 1, inputBinding = CPU, inputDataType = Tensor, deviceCreationLocation = WinML)...[
 SUCCESS]
 
+-----
+
 PS C:\Users\azureuser> docker ps -a
 CONTAINER ID   IMAGE                                       COMMAND                  CREATED          STATUS                                   PORTS     NAMES
 f7316cfb99bd   esmskubeacr.azurecr.io/samplemlgpu:v3       "C:/App/WinMLRunner …"   3 minutes ago    Exited (3221225786) About a minute ago             hardcore_kirch
@@ -135,10 +136,8 @@ f7316cfb99bd   esmskubeacr.azurecr.io/samplemlgpu:v3       "C:/App/WinMLRunner �
 These are the results for running the DirectX sample with the device bound. From the results we can see the GPU is both detected and utilized by the sample.
 In addition the docker container exits with code 0.
 
-```sh
-PS C:\Users\azureuser> docker run --isolation process --device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599 "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
->>
-
+```powershell
+PS C:\Users\azureuser> docker run --isolation process --device "class/5B45201D-F2F2-4F3B-85BB-30FF1F953599" "${ACR_NAME}.azurecr.io/samplemlgpu:v3"
 Created LearningModelDevice with CPU device
 
 Created LearningModelDevice with GPU: NVIDIA Tesla T4
@@ -232,9 +231,13 @@ Average Performance excluding first iteration. Iterations 2 to 100. (Iterations 
   Average Shared Memory usage (bind): 0 MB
   Average Shared Memory usage (evaluate): 0 MB
 
+-----
+
 PS C:\Users\azureuser> docker ps -a
 CONTAINER ID   IMAGE                                       COMMAND                  CREATED          STATUS                                   PORTS     NAMES
 4d3cf49c72e9   esmskubeacr.azurecr.io/samplemlgpu:v3       "C:/App/WinMLRunner …"   8 minutes ago    Exited (0) 8 minutes ago                           crazy_wright
+
+-----
 
 PS C:\Users\azureuser> & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
 Fri Feb  3 14:40:32 2023

@@ -80,7 +80,7 @@ az aks nodepool add \
 Scale nodes up or down:
 
 ```sh
-SCALE=2
+SCALE=1
 az aks scale --resource-group $RES_GROUP --name $AKS_NAME --node-count $SCALE --nodepool-name $NODE_POOL_NAME
 ```
 
@@ -103,7 +103,7 @@ az vmss extension set \
   --vmss-name $VMSS_NAME \
   --name NvidiaGpuDriverWindows \
   --publisher Microsoft.HpcCompute \
-  --version 1.4 \
+  --version 1.6 \
   --settings '{ }'
 ```
 
@@ -134,7 +134,6 @@ kubectl logs -n kube-system directx-device-<random-guid>
 https://stackoverflow.com/questions/63608246/extensions-on-aks-vmss
 
 https://unrealcontainers.com/docs/concepts/gpu-acceleration
-https://github.com/MicrosoftDocs/Virtualization-Documentation/tree/main/windows-container-samples/directx
 
 # Download the model manually and add it to the image
 
@@ -152,25 +151,6 @@ NVIDIA GPU DRIVER INSTALLTION ALTENATIVES
 <https://github.com/Azure-Samples/aks-nvidia-driver-daemonset>
 
 
-## MADNESS
-
-https://github.com/onnx/models/raw/main/vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-7.tar.gz
-
-https://raw.githubusercontent.com/onnx/models/main/vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-7.tar.gz
-
-https://github.com/onnx/models/tree/main/vision/object_detection_segmentation/tiny-yolov2
-
-
-curl -o tiny_yolov2.tar.gz https://raw.githubusercontent.com/EliiseS/aks-windows-gpu-acceleration/main/gpu/gpu_docker/tinyyolov2-7.tar.gz
-
-https://github.com/EliiseS/aks-windows-gpu-acceleration/blob/main/gpu/gpu_docker/tinyyolov2-7.tar.gz
-
-curl -X POST  \
--H "Accept: application/vnd.git-lfs+json" \
--H "Content-type: application/json" \
--d '{"operation": "download", "transfer": ["basic"], "objects": [{"oid": "b20099da6c3d78ee60f1a68073eb2b522dd572c32b1787f588b822afd2d2e34c", "size": 60865248}]}' \
--o foo.txt \
-https://github.com/onnx/models.git/info/lfs/objects/batch
 
 
 # start stop
@@ -202,9 +182,8 @@ https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli
 
 
 
-az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
-
 ```sh
+az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
 
 CLUSTER_RG=$(az aks show -g $RES_GROUP -n $AKS_NAME --query nodeResourceGroup -o tsv)
 VNET_NAME=$(az network vnet list -g $CLUSTER_RG --query [0].name -o tsv)
@@ -255,14 +234,25 @@ az network nsg rule create \
 
  ```
 
- # Go to the vm in portal -> Connect -> connect with RDP
+Go to the vm in portal -> Connect -> connect with RDP
 
-# Get AKS Node IP
+Get AKS Node IP
 
- k get nodes -o wide
+```sh
+k get nodes -o wide
+```
 
 In that VM, open RDP to connect to your AKS Node
 
+
+
+az aks nodepool upgrade  --resource-group $RES_GROUP --cluster-name $AKS_NAME --name win19 --kubernetes-version 1.25.4 --no-wait
+az aks get-upgrades --resource-group $RES_GROUP --name  $AKS_NAME
+az aks upgrade --resource-group $RES_GROUP --name  $AKS_NAME --kubernetes-version 1.25.4 
+az aks nodepool list --resource-group $RES_GROUP --cluster-name  $AKS_NAME
+
+
+## Issues encountered
 
 PLugin not installed, somehow got uninstalled? 
 
@@ -280,9 +270,10 @@ d-----        1/31/2023  11:46 AM                Microsoft.Compute.CustomScriptE
 
 ```
 
-```sh
- & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
-Tue Jan 31 13:27:15 2023
+## NVIDIA driver output with CUDA driver on AKS Nodepool VM
+
+PS C:\Users\azureuser>  & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
+Thu Feb  2 21:28:43 2023
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 473.47       Driver Version: 473.47       CUDA Version: 11.4     |
 |-------------------------------+----------------------+----------------------+
@@ -291,7 +282,7 @@ Tue Jan 31 13:27:15 2023
 |                               |                      |               MIG M. |
 |===============================+======================+======================|
 |   0  Tesla T4            TCC  | 00000001:00:00.0 Off |                  Off |
-| N/A   25C    P8     9W /  70W |      0MiB / 16225MiB |      0%      Default |
+| N/A   23C    P8     9W /  70W |      0MiB / 16225MiB |      0%      Default |
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
 
@@ -302,7 +293,32 @@ Tue Jan 31 13:27:15 2023
 |=============================================================================|
 |  No running processes found                                                 |
 +-----------------------------------------------------------------------------+
-```
+
+## NVIDIA driver output with GRID driver on AKS Nodepool vm
+
+PS C:\Users\azureuser>  & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
+Thu Feb  2 21:37:26 2023
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 512.78       Driver Version: 512.78       CUDA Version: 11.6     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name            TCC/WDDM | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla T4           WDDM  | 00000001:00:00.0 Off |                  Off |
+| N/A   38C    P8    15W /  70W |      4MiB / 16384MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+
+## Install AVEVA sample on Win Server
 
 ```sh
 PS C:\Users\azureuser> & '.\WinMLRunner v1.2.1.1\x64\WinMLRunner.exe' -model .\model\model.onnx -terse -iterations 10 -perf
@@ -375,7 +391,7 @@ Expand-Archive -Path C:\Users\azureuser\Downloads\XRSession.zip -DestinationPath
 Get-Process -Name Aveva.Cvp.Cloud.Poc.VideoService.XrSession.Executable | Stop-Process
 ```
 
-Results:
+### Results
 
 ```sh
 
@@ -407,5 +423,4 @@ Wed Feb  1 13:31:08 2023
 +-----------------------------------------------------------------------------+
 
 ```
-
 

@@ -1,4 +1,4 @@
-# Run DirectX Sample on Windows Server Core
+# Run containerized DirectX sample on Windows Server Core
 
 This is documents on how to run the [Windows GPU DirectX Sample](https://github.com/MicrosoftDocs/Virtualization-Documentation/tree/main/windows-container-samples/directx) within a container on Windows Server Core VM. The following command have been tested on the VM SKU `Standard_NC4as_T4_v3`.
 

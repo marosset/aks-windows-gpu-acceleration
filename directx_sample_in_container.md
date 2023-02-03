@@ -48,8 +48,6 @@ docker run --isolation process --device class/5B45201D-F2F2-4F3B-85BB-30FF1F9535
 
 ## Results
 
-
-
 ### Run without binding a device
 
 These are the results for running the DirectX sample with the device unbound. Interesting thing to note is that the model still detects the GPU, but errors out on when trying to use it.
@@ -237,4 +235,26 @@ Average Performance excluding first iteration. Iterations 2 to 100. (Iterations 
 PS C:\Users\azureuser> docker ps -a
 CONTAINER ID   IMAGE                                       COMMAND                  CREATED          STATUS                                   PORTS     NAMES
 4d3cf49c72e9   esmskubeacr.azurecr.io/samplemlgpu:v3       "C:/App/WinMLRunner …"   8 minutes ago    Exited (0) 8 minutes ago                           crazy_wright
+
+PS C:\Users\azureuser> & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
+Fri Feb  3 14:40:32 2023
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 512.78       Driver Version: 512.78       CUDA Version: 11.6     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name            TCC/WDDM | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla T4           WDDM  | 00000001:00:00.0 Off |                  Off |
+| N/A   28C    P8    16W /  70W |    365MiB / 16384MiB |     53%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A      9304    C+G   ...2.1.1\x64\WinMLRunner.exe    N/A      |
++-----------------------------------------------------------------------------+
 ```

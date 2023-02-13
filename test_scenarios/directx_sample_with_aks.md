@@ -487,6 +487,7 @@ In order to make use of `--device` flag which is set in the `k8s-directx-device-
 ```powershell
 $Version="1.7.0-beta.3"
 curl.exe -L https://github.com/containerd/containerd/releases/download/v$Version/containerd-$Version-windows-amd64.tar.gz -o containerd-windows-amd64.tar.gz
+tar.exe xvf .\containerd-windows-amd64.tar.gz
 
 Stop-Service kubeproxy
 Stop-Service kubelet

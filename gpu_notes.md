@@ -121,19 +121,23 @@ kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acce
 
 > NOTE: directX pod needs to be restarted if this applied before the VM is created or extension is installed
 
+```sh
 k describe node <node_name>
 
 kubectl logs -n kube-system directx-device-<random-guid>
+```
 
 <https://stackoverflow.com/questions/63608246/extensions-on-aks-vmss>
 
 <https://unrealcontainers.com/docs/concepts/gpu-acceleration>
 
-# Download the model manually and add it to the image
+Download the model manually and add it to the image
 
+```sh
 az acr build --platform windows --registry $ACR_NAME --image samplemlgpu:v1 .
+```
 
-# NVIDIA GPU DRIVER EXTENSTION TROUBLE SHOOTING
+##  NVIDIA GPU DRIVER EXTENSTION TROUBLE SHOOTING
 
 ```sh
 az vmss extension list --resource-group $CLUSTER_RESOURCE_GROUP --vmss-name $VMSS_NAME -o table
@@ -145,34 +149,37 @@ NVIDIA GPU DRIVER INSTALLTION ALTENATIVES
 
 <https://github.com/Azure-Samples/aks-nvidia-driver-daemonset>
 
-# start stop
+> May be possible to change mode?
+> [Tesla Compute Cluster (TCC)](https://docs.nvidia.com/gameworks/content/developertools/desktop/tesla_compute_cluster.htm)
 
-# Stop the cluster
+[Azure N-series NVIDIA GPU driver setup for Windows - Azure Virtual Machines | Microsoft Learn](https://learn.microsoft.com/en-us/azure/virtual-machines/windows/n-series-driver-setup)
 
-az aks stop --resource-group $RES_GROUP --name $AKS_NAME
+## Quality of life commands
 
-# Start the cluster
+Start the cluster
 
+```sh
 az aks start --resource-group $RES_GROUP --name $AKS_NAME
+```
 
-# exec into pod
+Stop the cluster
 
+```sh
+az aks stop --resource-group $RES_GROUP --name $AKS_NAME
+```
+
+exec into pod and get `dxdiag` output:
+> Look for DXVA2 Modes
+
+```sh
 kubectl exec --stdin --tty pods/sample-ml-workload-6896d6fb6b-c94sb -- PowerShell
 dxdiag /t dxdiag.txt
 cat dxdiag.txt
-
-> Look for DXVA2 Modes:
-> May be possible to change mode?
-Tesla Compute Cluster (TCC)
-<https://docs.nvidia.com/gameworks/content/developertools/desktop/tesla_compute_cluster.htm>
-
-Azure N-series NVIDIA GPU driver setup for Windows - Azure Virtual Machines | Microsoft Learn
-<https://learn.microsoft.com/en-us/azure/virtual-machines/windows/n-series-driver-setup>
+```
 
 ### RDP into cluster NODE
 
-RDP to AKS Windows Server nodes - Azure Kubernetes Service | Microsoft Learn
-<https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli>
+[RDP to AKS Windows Server nodes - Azure Kubernetes Service | Microsoft Learn](https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli)
 
 ```sh
 az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
@@ -182,7 +189,6 @@ VNET_NAME=$(az network vnet list -g $CLUSTER_RG --query [0].name -o tsv)
 SUBNET_NAME=$(az network vnet subnet list -g $CLUSTER_RG --vnet-name $VNET_NAME --query [0].name -o tsv)
 SUBNET_ID=$(az network vnet subnet show -g $CLUSTER_RG --vnet-name $VNET_NAME --name $SUBNET_NAME --query id -o tsv)
 NSG_NAME=$(az network nsg list -g $CLUSTER_RG --query [].name -o tsv)
-
 ```
 
 ```sh

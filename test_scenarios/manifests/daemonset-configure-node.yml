@@ -18,6 +18,7 @@ spec:
         - name: configure-node
           image: mcr.microsoft.com/powershell
           command:
+            # For NVidia T4 machines, install grid driver - Restart is triggered automatically after install
             - powershell
             - /c
             - curl.exe -L -o nvidia_grid.exe https://download.microsoft.com/download/7/3/6/7361d1b9-08c8-4571-87aa-18cf671e71a0/512.78_grid_win10_win11_server2016_server2019_server2022_64bit_azure_swl.exe;

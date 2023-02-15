@@ -21,8 +21,7 @@ spec:
             - powershell
             - /c
             - curl.exe -L -o nvidia_grid.exe https://download.microsoft.com/download/7/3/6/7361d1b9-08c8-4571-87aa-18cf671e71a0/512.78_grid_win10_win11_server2016_server2019_server2022_64bit_azure_swl.exe;
-            - Start-Process -FilePath nvidia_grid.exe; # You can use -ArgumentList here to provide arguments to the grid executable
-            - Restart-Computer;
+            - Start-Process -FilePath nvidia_grid.exe -Wait -ArgumentList '-s';
           resources:
             limits:
               memory: "512Mi"

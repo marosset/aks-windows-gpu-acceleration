@@ -503,7 +503,8 @@ Start-Service containerd
 ```
 
 Pod logs snippet. [Full log](aks_containerd_beta_pod_logs.txt):
-```
+
+```txt
 ...
 
 Created LearningModelDevice with CPU device
@@ -515,7 +516,8 @@ Loading model (path = C:\App\model\model.onnx)...
 ```
 
 GRID Driver:
-```
+
+```powershell
 PS C:\Users\azureuser> & 'C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe'
 Fri Feb  3 19:33:53 2023
 +-----------------------------------------------------------------------------+

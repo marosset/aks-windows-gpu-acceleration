@@ -71,25 +71,52 @@ The following guide can be completed by following the links or by following the 
     2. node-vm-size should be a `NV*` OR `NC*` series which support DirectX acceleration. [https://docs.microsoft.com/en-us/azure/virtual-machines/sizes-gpu]
     3. For `NC` machines, the NVIDIA GRID driver must be installed instead of CUDA
 
-4. Add the 'NVDIA GPU Driver Extension' to the VirtualMachineScaleSet created for the new node pool added above
+4. Install drivers
 
-    <https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/hpccompute-gpu-windows>
+   - For `NC*` machines: See [Manual nodepool configuration](test_scenarios/nodepool_configuration.md) (automatic is coming)
+   - For `NV*` machines: Add the 'NVDIA GPU Driver Extension' to the VirtualMachineScaleSet created for the new node pool added above
+       <https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/hpccompute-gpu-windows>
+       <https://docs.microsoft.com/en-us/cli/azure/vmss/extension?view=azure-cli-latest>
 
-    <https://docs.microsoft.com/en-us/cli/azure/vmss/extension?view=azure-cli-latest>
+       ```sh
+       az vmss extension set \
+       --resource-group $CLUSTER_RESOURCE_GROUP \
+       --vmss-name $VMSS_NAME \
+       --name NvidiaGpuDriverWindows \
+       --publisher Microsoft.HpcCompute \
+       --version 1.6 \
+       --settings '{ }'
+       ```
 
-   1. Ensure VirtualMachineScaleSet instances are using the most up-to-date model: <https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-upgrade-scale-set#how-to-bring-vms-up-to-date-with-the-latest-scale-set-model>
+       Get AKS's resource group and VMSS name
 
-5. Wait for VM extensions to run
+       ```sh
+       CLUSTER_RESOURCE_GROUP=$(az aks show --resource-group $RES_GROUP --name $AKS_NAME --query nodeResourceGroup -o tsv)
+       VMSS_NAME=$(az vmss list -g $CLUSTER_RESOURCE_GROUP --query "[1].name"  | tr -d '"' )
+       ```
 
-6. Deploy `k8s-directx-device-plugin.yaml to your cluster
+      1. Ensure VirtualMachineScaleSet instances are using the most up-to-date model: <https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-upgrade-scale-set#how-to-bring-vms-up-to-date-with-the-latest-scale-set-model>
+
+           ```sh
+           az vmss update-instances --resource-group $CLUSTER_RESOURCE_GROUP --name $VMSS_NAME  --instance-ids "*"
+           ```
+
+      2. Wait for VM extensions to run
+
+5. Deploy `k8s-directx-device-plugin.yaml` to your cluster
 
     ```bash
     kubectl apply -f https://raw.githubusercontent.com/marosset/aks-windows-gpu-acceleration/main/k8s-directx-device-plugin/k8s-directx-device-plugin.yaml
     ```
 
+    > NOTE: `k8s-directx-device` pod needs to be restarted if this applied before the VM is created or extension is installed
+
+
+6. Optionally deploy [DirectX Sample container](directx-ml-sample/readme.md).
+
 ### Node Setup Verification
 
-1. run `kubectl describe node {gpu-node}` and look for
+1. Run `kubectl describe node {gpu-node}` and look for
 
     ```yaml
     Capacity:

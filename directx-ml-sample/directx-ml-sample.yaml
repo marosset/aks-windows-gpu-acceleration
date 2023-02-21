@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: sample-ml-workload-container
-          image: esmskubeacr.azurecr.io/samplemlgpu:v3
+          image: <your_container_registry>/samplemlgpu:v3
           imagePullPolicy: Always
           resources:
             requests:

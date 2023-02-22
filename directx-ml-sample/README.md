@@ -15,7 +15,7 @@ K8s manifests deployed in the cluster:
 
     ```sh
     $ACR_NAME=<your_image_registry_name>
-    az acr build --platform windows --registry $ACR_NAME --image samplemlgpu:v1 ./directx-ml-sample/docker/
+    az acr build --platform windows --registry $ACR_NAME --image samplemlgpu:v1 --file Dockerfile-2019 ./directx-ml-sample/docker/
     ```
 
 2. Modify the [directx-ml-sample.yaml](directx-ml-sample.yaml) to use your image registry

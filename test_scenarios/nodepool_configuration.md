@@ -17,9 +17,7 @@ Copy-Item -Path ".\bin\ctr.exe" -Destination "$Env:ProgramFiles\containerd" -For
 Copy-Item -Path ".\bin\containerd-shim-runhcs-v1.exe" -Destination "$Env:ProgramFiles\containerd" -Force
 Copy-Item -Path ".\bin\containerd.exe" -Destination "$Env:ProgramFiles\containerd" -Force
 
-Start-Service kubeproxy
-Start-Service kubelet
-Start-Service containerd
+Start-Service containerd; Start-Service kubeproxy; Start-Service kubelet
 ```
 
 ## Install NVIDIA GRID drivers

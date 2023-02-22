@@ -1,8 +1,8 @@
-FROM mcr.microsoft.com/windows:10.0.17763.3887
+FROM mcr.microsoft.com/windows/server:10.0.20348.1487
 
 WORKDIR C:/App
 
-RUN curl.exe -o tiny_yolov2.tar.gz https://raw.githubusercontent.com/EliiseS/aks-windows-gpu-acceleration/main/gpu/gpu_docker/tinyyolov2-7.tar.gz && \
+RUN curl.exe -o tiny_yolov2.tar.gz https://raw.githubusercontent.com/EliiseS/aks-windows-gpu-acceleration/main/directx-ml-sample/docker/tinyyolov2-7.tar.gz && \
     tar.exe -xf tiny_yolov2.tar.gz && \
     del tiny_yolov2.tar.gz
 

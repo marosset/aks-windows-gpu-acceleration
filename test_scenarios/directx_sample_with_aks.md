@@ -24,7 +24,7 @@ Tested driver installation methods:
 
   ```sh
   az vmss extension set \
-    --resource-group $CLUSTER_RESOURCE_GROUP \
+    --resource-group $CLUSTER_RG \
     --vmss-name $VMSS_NAME \
     --name NvidiaGpuDriverWindows \
     --publisher Microsoft.HpcCompute \

@@ -1,2 +1,2 @@
 .env
-manifests
+k8s-manifests

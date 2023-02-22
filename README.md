@@ -78,9 +78,16 @@ The following guide can be completed by following the links or by following the 
        <https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/hpccompute-gpu-windows>
        <https://docs.microsoft.com/en-us/cli/azure/vmss/extension?view=azure-cli-latest>
 
+       Get AKS's resource group and VMSS name
+
+       ```sh
+       CLUSTER_RG=$(az aks show --resource-group $RES_GROUP --name $AKS_NAME --query nodeResourceGroup -o tsv)
+       VMSS_NAME=$(az vmss list -g $CLUSTER_RG --query "[1].name"  | tr -d '"' )
+       ```
+
        ```sh
        az vmss extension set \
-       --resource-group $CLUSTER_RESOURCE_GROUP \
+       --resource-group $CLUSTER_RG \
        --vmss-name $VMSS_NAME \
        --name NvidiaGpuDriverWindows \
        --publisher Microsoft.HpcCompute \
@@ -88,20 +95,21 @@ The following guide can be completed by following the links or by following the 
        --settings '{ }'
        ```
 
-       Get AKS's resource group and VMSS name
-
-       ```sh
-       CLUSTER_RESOURCE_GROUP=$(az aks show --resource-group $RES_GROUP --name $AKS_NAME --query nodeResourceGroup -o tsv)
-       VMSS_NAME=$(az vmss list -g $CLUSTER_RESOURCE_GROUP --query "[1].name"  | tr -d '"' )
-       ```
-
       1. Ensure VirtualMachineScaleSet instances are using the most up-to-date model: <https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-upgrade-scale-set#how-to-bring-vms-up-to-date-with-the-latest-scale-set-model>
 
-           ```sh
-           az vmss update-instances --resource-group $CLUSTER_RESOURCE_GROUP --name $VMSS_NAME  --instance-ids "*"
-           ```
+            ```sh
+            az vmss update-instances --resource-group $CLUSTER_RG --name $VMSS_NAME  --instance-ids "*"
+            ```
 
       2. Wait for VM extensions to run
+      3. If something goes wrong with the installation, delete the extension and try again
+
+            ```sh
+            az vmss extension delete \
+            --resource-group $CLUSTER_RG \
+            --vmss-name $VMSS_NAME \
+            --name NvidiaGpuDriverWindows 
+            ```
 
 5. Deploy `k8s-directx-device-plugin.yaml` to your cluster
 
@@ -157,10 +165,28 @@ The following guide can be completed by following the links or by following the 
     kubectl get pods -A
     ```
 
+1. Check node has directX capacity enabled
+
+```sh
+k describe node {node_name}
+```
+
+```log
+$ k describe node akswin22000002 
+...
+Capacity:
+  cpu:                    4
+  ephemeral-storage:      133703676Ki
+  memory:                 29359668Ki
+  microsoft.com/directx:  1
+  pods:                   30
+..
+```
+
 1. Check device plugin pod logs
 
     ```bash
-    kubectl logs -n kube-system {pod-name}
+    kubectl logs -n kube-system directx-device-plugin-{pod-guid}
     ```
 
     You should see something like
@@ -175,3 +201,125 @@ The following guide can be completed by following the links or by following the 
     2022/05/05 19:10:40 Deprecation file not found. Invoke registration
     2022/05/05 19:10:40 ListAndWatch
     ```
+
+1. Check `dxdiag` output in the container:
+
+> Look for 'DXVA2 Modes'
+
+```sh
+kubectl exec --stdin --tty pods/{pod_name} -- PowerShell
+dxdiag /t dxdiag.txt
+cat dxdiag.txt
+....
+      Rank Of Driver: Unknown
+         Video Accel: Unknown
+         DXVA2 Modes: Unknown # Important, these modes should not be unknown with working GPU acceleration
+      Deinterlace Caps: n/a
+        D3D9 Overlay: Unknown
+             DXVA-HD: Unknown
+...
+```
+
+1. Upgrade AKS
+
+[Upgrade an Azure Kubernetes Service (AKS) cluster - Azure Kubernetes Service | Microsoft Learn](https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster?tabs=azure-cli)
+
+```sh
+# Get available upgrades
+az aks get-upgrades --resource-group $RES_GROUP --name  $AKS_NAME
+
+# Upgrade
+NEW_AKS_VERSION={version_to_upgrade_to}
+az aks nodepool upgrade --resource-group $RES_GROUP --cluster-name $AKS_NAME --name $NODE_POOL_NAME --kubernetes-version $NEW_AKS_VERSION --no-wait
+
+# View versions
+az aks nodepool list --resource-group $RES_GROUP --cluster-name  $AKS_NAME
+```
+
+### Setting up RDP access to the node
+
+Following [RDP to AKS Windows Server nodes - Azure Kubernetes Service | Microsoft Learn](https://learn.microsoft.com/en-us/azure/aks/rdp?tabs=azure-cli).
+
+```sh
+az aks update -g $RES_GROUP -n $AKS_NAME --windows-admin-password $WINDOWS_ADMIN_PASSWORD
+
+CLUSTER_RG=$(az aks show -g $RES_GROUP -n $AKS_NAME --query nodeResourceGroup -o tsv)
+VNET_NAME=$(az network vnet list -g $CLUSTER_RG --query [0].name -o tsv)
+SUBNET_NAME=$(az network vnet subnet list -g $CLUSTER_RG --vnet-name $VNET_NAME --query [0].name -o tsv)
+SUBNET_ID=$(az network vnet subnet show -g $CLUSTER_RG --vnet-name $VNET_NAME --name $SUBNET_NAME --query id -o tsv)
+NSG_NAME=$(az network nsg list -g $CLUSTER_RG --query [].name -o tsv)
+```
+
+```sh
+PUBLIC_IP_ADDRESS_NAME="winVMPublicIP"
+
+az vm image list --output table
+
+az vm create \
+    --resource-group $RES_GROUP \
+    --name jumpBoxWinVM \
+    --image Win2019Datacenter \
+    --admin-username azureuser \
+    --admin-password $WINDOWS_ADMIN_PASSWORD \
+    --subnet $SUBNET_ID \
+    --nic-delete-option delete \
+    --os-disk-delete-option delete \
+    --nsg "" \
+    --public-ip-address winVMPublicIP \
+    --query publicIpAddress -o tsv
+```
+
+Create network rule to allow rdp
+
+```sh
+CLUSTER_RG=$(az aks show -g $RES_GROUP -n $AKS_NAME --query nodeResourceGroup -o tsv)
+NSG_NAME=$(az network nsg list -g $CLUSTER_RG --query [].name -o tsv)
+
+az network nsg rule create \
+ --name tempRDPAccess \
+ --resource-group $CLUSTER_RG \
+ --nsg-name $NSG_NAME \
+ --priority 100 \
+ --destination-port-range 3389 \
+ --protocol Tcp \
+ --description "Temporary RDP access to Windows nodes"
+ ```
+
+Go to the vm in portal -> Connect -> connect with RDP
+
+Get AKS Node IP
+
+```sh
+k get nodes -o wide
+```
+
+In that VM, open RDP to connect to your AKS Node
+
+## Useful commands
+
+Start and Stop the cluster
+
+```sh
+az aks start --resource-group $RES_GROUP --name $AKS_NAME
+az aks stop --resource-group $RES_GROUP --name $AKS_NAME
+```
+
+View available VM SKUs in a region
+
+```sh
+az vm list-usage --location "West Europe" -o table
+az vm list-sizes --location "West Europe" -o table
+```
+
+Scale nodes up or down:
+
+```sh
+SCALE=1
+az aks scale --resource-group $RES_GROUP --name $AKS_NAME --node-count $SCALE --nodepool-name $NODE_POOL_NAME
+```
+
+List all extensions available for VMSS
+
+```sh
+az vmss extension image list -o table
+```

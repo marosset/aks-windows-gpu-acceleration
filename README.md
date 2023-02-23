@@ -18,6 +18,7 @@ The following guide can be completed by following the links or by following the 
     ACR_NAME=
     AKS_NAME=
     NODE_POOL_NAME=
+    NODE_POOL_SKU=
 
     WINDOWS_ADMIN_PASSWORD=
     SUBSCRIPTION=
@@ -70,6 +71,17 @@ The following guide can be completed by following the links or by following the 
 
     2. node-vm-size should be a `NV*` OR `NC*` series which support DirectX acceleration. [https://docs.microsoft.com/en-us/azure/virtual-machines/sizes-gpu]
     3. For `NC` machines, the NVIDIA GRID driver must be installed instead of CUDA
+
+    ```sh
+    az aks nodepool add \
+        --resource-group $RES_GROUP \
+        --name $NODE_POOL_NAME \
+        --cluster-name $AKS_NAME \
+        --node-vm-size $NODE_POOL_SKU  \    
+        --os-type Windows \
+        --os-sku Windows2022 \
+        --node-count 1
+    ```
 
 4. Install drivers
 

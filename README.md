@@ -134,7 +134,7 @@ The following guide can be completed by following the links or by following the 
     > NOTE: `k8s-directx-device` pod needs to be restarted if this applied before the VM is created or extension is installed
 
 
-6. Optionally deploy [DirectX Sample container](directx-ml-sample/readme.md).
+6. Optionally deploy [DirectX Sample container](directx-ml-sample/README.md).
 
 ### Node Setup Verification
 

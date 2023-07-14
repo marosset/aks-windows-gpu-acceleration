@@ -2,7 +2,11 @@
 
 This documents the dependencies required and their install steps to enable a GPU acceleration for AKS Nodes with `Standard_NC4as_T4_v3` SKU Windows Server Core 2022.
 
+All below commands are executed on the node locally, by accessing the machine.
+
 ## Upgrade Containerd
+
+Only run this if containerd version is less than `1.7.0-beta.3`
 
 ```powershell
 $Version="1.7.0-beta.3"

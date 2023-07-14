@@ -87,7 +87,7 @@ The following guide can be completed by following the links or by following the 
 
    - For `NC*` machines: See
      - [Daemonset to install Nvidia Drivers](test_scenarios/manifests/daemonset-configure-node.yml)
-     - [Manual nodepool configuration](test_scenarios/nodepool_configuration.md)
+     - [Manual nodepool configuration](manual_nodepool_configuration.md) (automatic is coming from PG)
    - For `NV*` machines: Add the 'NVDIA GPU Driver Extension' to the VirtualMachineScaleSet created for the new node pool added above
        <https://docs.microsoft.com/en-us/azure/virtual-machines/extensions/hpccompute-gpu-windows>
        <https://docs.microsoft.com/en-us/cli/azure/vmss/extension?view=azure-cli-latest>

@@ -1,0 +1,28 @@
+kind: Deployment
+apiVersion: apps/v1
+
+metadata:
+  name: sample-ml-workload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-ml-workload
+  template:
+    metadata:
+      labels:
+        app: sample-ml-workload
+    spec:
+      containers:
+        - name: sample-ml-workload-container
+          image: <your_container_registry>/samplemlgpu:v3
+          imagePullPolicy: Always
+          resources:
+            requests:
+              microsoft.com/directx: "1"
+              cpu: 500m
+              memory: 050Mi
+            limits:
+              microsoft.com/directx: "1"
+              cpu: 1000m
+              memory: 1000Mi

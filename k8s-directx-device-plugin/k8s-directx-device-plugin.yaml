@@ -21,7 +21,7 @@ spec:
           runAsUserName: "NT AUTHORITY\\SYSTEM"
       containers:
         - name: directx-device-plugin
-          image: mrosse3/k8s-directx-device-plugin:hpc-0.1.0
+          image: mcr.microsoft.com/aks/aks-windows-gpu-device-plugin:latest
           env:
             - name: "DIRECTX_GPU_MATCH_NAME"
               value: "nvidia"

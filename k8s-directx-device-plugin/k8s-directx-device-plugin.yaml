@@ -21,10 +21,11 @@ spec:
           runAsUserName: "NT AUTHORITY\\SYSTEM"
       containers:
         - name: directx-device-plugin
+          image: mcr.microsoft.com/aks/aks-windows-gpu-device-plugin:0.0.2
+          securityContext:
             capabilities:
               drop:
-                - ALL
-          image: mcr.microsoft.com/aks/aks-windows-gpu-device-plugin:0.0.2
+              - ALL
           env:
             - name: "DIRECTX_GPU_MATCH_NAME"
               value: "nvidia"

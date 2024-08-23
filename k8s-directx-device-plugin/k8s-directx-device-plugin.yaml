@@ -21,7 +21,7 @@ spec:
           runAsUserName: "NT AUTHORITY\\SYSTEM"
       containers:
         - name: directx-device-plugin
-          image: mcr.microsoft.com/aks/aks-windows-gpu-device-plugin:0.0.2
+          image: mcr.microsoft.com/aks/aks-windows-gpu-device-plugin:0.0.9
           securityContext:
             capabilities:
               drop:
